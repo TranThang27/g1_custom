@@ -30,6 +30,36 @@ REGISTER_OBSERVATION(keyboard_velocity_commands)
     return cmd;
 }
 
+// Fixed velocity command: 0.5 m/s forward for first 5s after entering Velocity mode
+// change "velocity_commands" to "fixed_velocity_commands" in deploy.yaml to use this
+
+REGISTER_OBSERVATION(fixed_velocity_commands)
+{
+    // episode_length được reset về 0 khi vào Velocity state (env->reset())
+    // step_dt thường là 0.02s
+    float elapsed = env->episode_length * env->step_dt;
+
+    if (elapsed < 5.0f) 
+    {
+        // Trong 5 giây đầu từ khi vào Velocity: đi tới với vận tốc 0.5 m/s
+        return std::vector<float>{0.5f, 0.0f, 0.0f};
+    } 
+    else 
+    {
+        // Sau 5 giây: đứng yên
+        return std::vector<float>{0.0f, 0.0f, 0.0f};
+    }
+}
+
+// Zero velocity command: stand still, used for RaisingHand state
+// change "velocity_commands" to "zero_velocity_commands" in deploy.yaml to use this
+REGISTER_OBSERVATION(zero_velocity_commands)
+{
+    // Luôn trả về velocity = 0: đứng yên, không di chuyển
+    return std::vector<float>{0.0f, 0.0f, 0.0f};
+}
+
+
 }
 
 State_RLBase::State_RLBase(int state_mode, std::string state_string)
@@ -44,6 +74,23 @@ State_RLBase::State_RLBase(int state_mode, std::string state_string)
     );
     env->alg = std::make_unique<isaaclab::OrtRunner>(policy_dir / "exported" / "policy.onnx");
 
+    // Auto transition to RaisingHand after velocity becomes 0 (after 5s + 1s buffer)
+    if(FSMStringMap.right.count("RaisingHand"))
+    {
+        int raisinghand_id = FSMStringMap.right.at("RaisingHand");
+        this->registered_checks.emplace_back(
+            std::make_pair(
+                [&]() -> bool {
+                    // Chuyển sang RaisingHand sau 6s (5s di chuyển + 1s đứng yên)
+                    float elapsed = env->episode_length * env->step_dt;
+                    return elapsed >= 6.0f;
+                },
+                raisinghand_id
+            )
+        );
+    }
+
+    // Bad orientation check - transition to Passive if robot falls
     this->registered_checks.emplace_back(
         std::make_pair(
             [&]()->bool{ return isaaclab::mdp::bad_orientation(env.get(), 1.0); },

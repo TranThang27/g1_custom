@@ -7,13 +7,9 @@ FSM:
     Velocity:
       id: 3
       type: RLBase
+    RaisingHand:
+      id: 4
 
-    Mimic_Dance_102: # uncomment to enable
-      id: 101
-      type: Mimic
-    Mimic_Gangnam_Style:
-      id: 102
-      type: Mimic
 
   Passive:
     transitions: 
@@ -60,30 +56,22 @@ FSM:
         0, -0.25,0,0.97,-0.15, 0,0
       ]
     ]
+    auto_velocity_delay: 6.0  # Auto switch to Velocity mode after 5 seconds (wait for stable stand)
   Velocity:
     transitions: 
       Passive: LT + B.on_pressed
+      RaisingHand: RB + Y.on_pressed
       Mimic_Dance_102: LT(2s) + down.on_pressed
       Mimic_Gangnam_Style: LT(2s) + left.on_pressed
 
     policy_dir: config/policy/velocity
-    # policy_dir: ../../../logs/rsl_rl/unitree_g1_29dof_velocity
-  Mimic_Dance_102:
-    transitions: 
-      Passive: LT + B.on_pressed
-      Velocity: RB + X.on_pressed
-    fps: 60
-    motion_file: config/policy/mimic/dance_102/params/G1_Take_102.bvh_60hz.csv
-    policy_dir: config/policy/mimic/dance_102/
-    time_start: 2.8
-    time_end: 24.0
-  Mimic_Gangnam_Style:
-    transitions: 
-      Passive: LT + B.on_pressed
-      Velocity: RB + X.on_pressed
-    fps: 60
-    motion_file: config/policy/mimic/gangnam_style/params/G1_gangnam_style_V01.bvh_60hz.csv
-    policy_dir: config/policy/mimic/gangnam_style/
-    time_start: 5.2
-    time_end: 25.5
 
+
+  RaisingHand:
+    transitions:
+      Passive: LT + B.on_pressed
+      FixStand: RB + X.on_pressed
+    policy_dir: config/policy/raising_hand  # Uses zero_velocity_commands for standing still
+    raise_duration: 4.0  # Time to raise hands (seconds)
+    raise_left: false     # Raise left hand
+    raise_right: true    # Raise right hand

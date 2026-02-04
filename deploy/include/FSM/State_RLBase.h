@@ -14,6 +14,8 @@ public:
     
     void enter()
     {
+        enter_time_ = std::chrono::steady_clock::now();
+        
         // set gain
         for (int i = 0; i < env->robot->data.joint_stiffness.size(); ++i)
         {
@@ -56,11 +58,14 @@ public:
         }
     }
 
-private:
+protected:
     std::unique_ptr<isaaclab::ManagerBasedRLEnv> env;
 
     std::thread policy_thread;
     bool policy_thread_running = false;
+    
+    std::chrono::steady_clock::time_point enter_time_;
+    float velocity_duration_sec_ = 5.0f;  // Duration to stay in Velocity mode
 };
 
 REGISTER_FSM(State_RLBase)
