@@ -50,12 +50,6 @@ public:
         if(cfg["raise_duration"].IsDefined()) {
             raise_duration_ = cfg["raise_duration"].as<float>();
         }
-        if(cfg["raise_left"].IsDefined()) {
-            raise_left_ = cfg["raise_left"].as<bool>();
-        }
-        if(cfg["raise_right"].IsDefined()) {
-            raise_right_ = cfg["raise_right"].as<bool>();
-        }
     }
 
     void enter()
@@ -80,25 +74,25 @@ public:
         float t = (double)unitree::common::GetCurrentTimeMillisecond() * 1e-3 - t0_arm_;
         float ratio = std::clamp(t / raise_duration_, 0.0f, 1.0f);
 
-        // Target positions for raising hands
+        // Target positions - only raise right hand
         std::array<float, 14> q_target = {
-            // Left arm (raised up - lower position)
-            raise_left_ ? -0.5f : q0_arm_[0],   // LeftShoulderPitch (lower)
-            raise_left_ ? 0.15f : q0_arm_[1],   // LeftShoulderRoll (slightly out)
-            q0_arm_[2],                          // LeftShoulderYaw
-            raise_left_ ? 0.0f : q0_arm_[3],    // LeftElbow (straight)
-            q0_arm_[4],                          // LeftWristRoll
-            q0_arm_[5],                          // LeftWristPitch
-            q0_arm_[6],                          // LeftWristYaw
+            // Left arm (keep original position)
+            q0_arm_[0],   // LeftShoulderPitch
+            q0_arm_[1],   // LeftShoulderRoll
+            q0_arm_[2],   // LeftShoulderYaw
+            q0_arm_[3],   // LeftElbow
+            q0_arm_[4],   // LeftWristRoll
+            q0_arm_[5],   // LeftWristPitch
+            q0_arm_[6],   // LeftWristYaw
             
-            // Right arm (raised up - lower position)
-            raise_right_ ? -0.5f : q0_arm_[7],  // RightShoulderPitch (lower)
-            raise_right_ ? -0.15f : q0_arm_[8], // RightShoulderRoll (slightly out)
-            q0_arm_[9],                          // RightShoulderYaw
-            raise_right_ ? 0.0f : q0_arm_[10],  // RightElbow (straight)
-            q0_arm_[11],                         // RightWristRoll
-            q0_arm_[12],                         // RightWristPitch
-            q0_arm_[13]                          // RightWristYaw
+            // Right arm (raised up)
+            -0.5f,        // RightShoulderPitch (raise up)
+            -0.15f,       // RightShoulderRoll (slightly out)
+            q0_arm_[9],   // RightShoulderYaw
+            0.0f,         // RightElbow (straight)
+            q0_arm_[11],  // RightWristRoll
+            q0_arm_[12],  // RightWristPitch
+            q0_arm_[13]   // RightWristYaw
         };
 
         // Interpolate and set arm positions (override policy output for arms)
@@ -120,9 +114,7 @@ public:
 
 private:
     double t0_arm_;
-    float raise_duration_ = 2.0f;  // Time to raise hands (seconds)
-    bool raise_left_ = true;
-    bool raise_right_ = true;
+    float raise_duration_ = 2.0f;  // Time to raise hand (seconds)
     std::array<float, 14> q0_arm_;  // Initial arm positions
 };
 

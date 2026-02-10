@@ -5,6 +5,8 @@ set(CMAKE_CXX_STANDARD 17)
 
 find_package(Boost REQUIRED COMPONENTS program_options)
 find_package(yaml-cpp REQUIRED)
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(ZMQ REQUIRED libzmq)
 
 include_directories(
   /usr/include/eigen3
@@ -13,16 +15,19 @@ include_directories(
   include
   ${PROJECT_SOURCE_DIR}/../../thirdparty/onnxruntime-linux-x64-1.22.0/include
   ${PROJECT_SOURCE_DIR}/../../include/
+  ${ZMQ_INCLUDE_DIRS}
 )
 
 link_directories(
   /opt/unitree_robotics/lib
+  ${ZMQ_LIBRARY_DIRS}
 )
 
 link_libraries(
   unitree_sdk2 ddsc ddscxx rt pthread # dds
   libboost_program_options.a libyaml-cpp.a fmt
   ${PROJECT_SOURCE_DIR}/../../thirdparty/onnxruntime-linux-x64-1.22.0/lib/libonnxruntime.so.1.22.0
+  ${ZMQ_LIBRARIES}
 )
 
 file(GLOB_RECURSE ADD_SRC_LIST

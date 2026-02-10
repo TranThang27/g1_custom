@@ -2,6 +2,7 @@
 #include "unitree_articulation.h"
 #include "isaaclab/envs/mdp/observations/observations.h"
 #include "isaaclab/envs/mdp/actions/joint_actions.h"
+#include "AISignal.h"
 #include <unordered_map>
 
 namespace isaaclab
@@ -55,10 +56,23 @@ REGISTER_OBSERVATION(fixed_velocity_commands)
 // change "velocity_commands" to "zero_velocity_commands" in deploy.yaml to use this
 REGISTER_OBSERVATION(zero_velocity_commands)
 {
-    // Luôn trả về velocity = 0: đứng yên, không di chuyển
     return std::vector<float>{0.0f, 0.0f, 0.0f};
 }
 
+// AI-controlled velocity command: receive velocity from Python PD controller via ZMQ
+// change "velocity_commands" to "ai_velocity_commands" in deploy.yaml to use this
+REGISTER_OBSERVATION(ai_velocity_commands)
+{
+    AISignal& ai = AISignal::getInstance();
+    
+    // Lấy velocity từ Python PD controller qua ZMQ
+    // vel_x: forward, vel_y: lateral, vel_ang: angular (turn)
+    float vel_x = ai.getVelX();
+    float vel_y = ai.getVelY();
+    float vel_ang = ai.getVelAng();
+    
+    return std::vector<float>{vel_x, vel_y, vel_ang};
+}
 
 }
 
@@ -74,16 +88,20 @@ State_RLBase::State_RLBase(int state_mode, std::string state_string)
     );
     env->alg = std::make_unique<isaaclab::OrtRunner>(policy_dir / "exported" / "policy.onnx");
 
-    // Auto transition to RaisingHand after velocity becomes 0 (after 5s + 1s buffer)
+    // Auto transition to RaisingHand when Python sends "raisinghand" signal
     if(FSMStringMap.right.count("RaisingHand"))
     {
         int raisinghand_id = FSMStringMap.right.at("RaisingHand");
         this->registered_checks.emplace_back(
             std::make_pair(
                 [&]() -> bool {
-                    // Chuyển sang RaisingHand sau 6s (5s di chuyển + 1s đứng yên)
-                    float elapsed = env->episode_length * env->step_dt;
-                    return elapsed >= 6.0f;
+                    AISignal& ai = AISignal::getInstance();
+                    // Chuyển sang RaisingHand khi Python gửi tín hiệu "raisinghand"
+                    if (ai.isRaisingHandTriggered()) {
+                        ai.clearRaisingHandTrigger(); // Clear flag sau khi xử lý
+                        return true;
+                    }
+                    return false;
                 },
                 raisinghand_id
             )

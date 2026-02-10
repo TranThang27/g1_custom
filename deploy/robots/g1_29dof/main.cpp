@@ -3,7 +3,8 @@
 #include "FSM/State_FixStand.h"
 #include "FSM/State_RLBase.h"
 #include "State_Mimic.h"
-#include "State_RaisingHand.h"
+#include "FSM/State_RaisingHand.h"
+#include "AISignal.h"
 
 std::unique_ptr<LowCmd_t> FSMState::lowcmd = nullptr;
 std::shared_ptr<LowState_t> FSMState::lowstate = nullptr;
@@ -44,6 +45,9 @@ int main(int argc, char** argv)
         spdlog::critical("Unmatched robot type.");
         exit(-1);
     }
+    
+    // Start AI Signal receiver (ZMQ subscriber for face detection)
+    AISignal::getInstance().start("tcp://localhost:5555");
     
     // Initialize FSM
     auto fsm = std::make_unique<CtrlFSM>(param::config["FSM"]);

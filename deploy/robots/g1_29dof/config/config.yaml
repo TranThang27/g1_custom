@@ -61,8 +61,7 @@ FSM:
     transitions: 
       Passive: LT + B.on_pressed
       RaisingHand: RB + Y.on_pressed
-      Mimic_Dance_102: LT(2s) + down.on_pressed
-      Mimic_Gangnam_Style: LT(2s) + left.on_pressed
+
 
     policy_dir: config/policy/velocity
 
@@ -72,6 +71,4 @@ FSM:
       Passive: LT + B.on_pressed
       FixStand: RB + X.on_pressed
     policy_dir: config/policy/raising_hand  # Uses zero_velocity_commands for standing still
-    raise_duration: 4.0  # Time to raise hands (seconds)
-    raise_left: false     # Raise left hand
-    raise_right: true    # Raise right hand
+    raise_duration: 4.0  # Time to raise right hand (seconds)
